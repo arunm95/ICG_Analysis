@@ -16,7 +16,7 @@ class markup:
         self.save = True
         self.mvsa_temp = 0.0
         self.mvsa = 0.0
-        self.mvsa_markup = True
+        self.mvsa_markup = False
         self.mvsa_diam_markup = False
 
 
@@ -26,22 +26,26 @@ class markup:
         if event == cv2.EVENT_LBUTTONDOWN:
             ix, iy = x, y
             if self.mode:
-                y1, x1, y2, x2 = self.get_points(x, y)
-                cv2.rectangle(param, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0))
+                cv2.rectangle(param, (ix, iy), (x, y), (255, 0, 0))
             else:
-                cv2.line(param, (ix, iy), (x, y), (255, 0, 0), 2)
+                cv2.line(param, (ix, iy), (x, y), (255, 0, 0))
 
         elif event == cv2.EVENT_LBUTTONUP:
-            if ~self.mode:
-                cv2.line(param, (ix, iy), (x, y), (255, 0, 255), 2)
+            if not self.mode:
+                cv2.line(param, (ix, iy), (x, y), (255, 0, 255))
                 dist = self.calculate_distance((ix, iy), (x, y))
-                cv2.putText(param, str(dist), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
                 if self.mvsa_markup:
                     if self.mvsa_diam_markup:
-                        self.mvsa = float(self.mvsa + float(self.mvsa_temp * (dist/2) * np.pi))
+                        self.mvsa = float(self.mvsa + float(self.mvsa_temp * (dist) * np.pi))
                         self.mvsa_temp = 0.0
                     else:
                         self.mvsa_temp = float(self.mvsa + dist)
+                else:
+                    cv2.putText(param, str(dist), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+            else:
+                cv2.rectangle(param, (ix, iy), (x, y), (255, 0, 0))
+                dim = self.get_dim([ix, iy], [x, y])
+                cv2.putText(param, str(dim[0]) + ', ' + str(dim[1]), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         elif event == cv2.EVENT_RBUTTONDOWN:
             ix, iy = x, y
@@ -52,9 +56,9 @@ class markup:
             cv2.line(param, (ix, iy), (x, y), (0, 255, 0), 2)
 
 
-    def get_points(self, x, y):
-        dist = float(1/(self.distance_pixel_ratio * 1/self.size))
-        return (y + dist/2, x - dist/2, y - dist/2, y + dist/2)
+    def get_dim(self, p1, p2):
+        return [self.calculate_distance((p1[0], p1[1]),(p2[0], p1[1])),
+                self.calculate_distance((p1[0], p1[1]), (p1[0], p2[1]))]
 
     def calculate_distance(self, p1, p2):
         pix_dist = distance.euclidean(p1, p2)
@@ -65,11 +69,12 @@ class markup:
         self.distance_pixel_ratio = float(dist/pix_dist)
 
     def run(self):
+        count = 0
         src = cv2.imread(self.filename)
         img = cv2.resize(src, None, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         cv2.namedWindow('markup', cv2.WINDOW_AUTOSIZE)
         cv2.setMouseCallback('markup', self.mouse_callback, param=img)
-
+        print("Starting markup, click m to enter rectangle mode, press n to exit saving mode, press s to to mark up mvsa, r to clear the image and d to enter diameter mode.")
         while cv2.waitKey(33) != ord('q'):
             if cv2.waitKey(33) == ord('m'):
                 if self.mode:
@@ -93,17 +98,26 @@ class markup:
                     self.mvsa_markup = True
                     print("Now in mvsa markup mode.")
             if cv2.waitKey(33) == ord('d'):
-                if self.mvsa_markup:
-                    self.mvsa_markup = False
+                if self.mvsa_diam_markup:
+                    self.mvsa_diam_markup = False
                     print("No longer in mvsa diameter markup mode.")
                 else:
-                    self.mvsa_markup = True
+                    self.mvsa_diam_markup = True
                     print("Now in mvsa diameter markup mode.")
+            if cv2.waitKey(33) == ord('r'):
+                if self.save:
+                    cv2.imwrite(self.filename[:-4] + '_markup' + str(count) + '.jpg', img)
+                    cv2.namedWindow('markup_' + str(count), cv2.WINDOW_AUTOSIZE)
+                    cv2.imshow('markup_' + str(count), img)
+                    count = count + 1
+                src = cv2.imread(self.filename)
+                img = cv2.resize(src, None, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+                cv2.setMouseCallback('markup', self.mouse_callback, param=img)
             cv2.imshow('markup', img)
             cv2.waitKey(33)
 
         if self.save:
-            cv2.imwrite(self.filename[:-4] + '_markup.jpg', img)
+            cv2.imwrite(self.filename[:-4] + '_markup' + str(count) + '.jpg', img)
             self.save_markup()
         cv2.destroyAllWindows()
 

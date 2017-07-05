@@ -1,4 +1,6 @@
 import cv2
+import os
+from os import mkdir
 import numpy as np
 from Tkinter import Tk
 from tkFileDialog import askopenfilename
@@ -39,6 +41,8 @@ class ImgCapture:
             cv2.imshow('TVideo_AM', th2)
 
             if cv2.waitKey(30) == ord('i'):
+                if not os.path.exists(self.filename[:-4]):
+                    os.mkdir(self.filename[:-4])
                 cv2.imwrite(self.filename[:-4] + '/capture_orig' + str(count) + '.jpg', frame)
                 cv2.imshow('capture', frame)
                 cv2.imwrite(self.filename[:-4] + '/capture_thresh' + str(count) + '.jpg', th2)
