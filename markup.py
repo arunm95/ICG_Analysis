@@ -39,7 +39,7 @@ class markup:
                         self.mvsa = float(self.mvsa + float(self.mvsa_temp * (dist) * np.pi))
                         self.mvsa_temp = 0.0
                     else:
-                        self.mvsa_temp = float(self.mvsa + dist)
+                        self.mvsa_temp = float(self.mvsa_temp + dist)
                 else:
                     cv2.putText(param, str(dist), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
             else:
@@ -76,35 +76,36 @@ class markup:
         cv2.setMouseCallback('markup', self.mouse_callback, param=img)
         print("Starting markup, click m to enter rectangle mode, press n to exit saving mode, press s to to mark up mvsa, r to clear the image and d to enter diameter mode.")
         while cv2.waitKey(33) != ord('q'):
-            if cv2.waitKey(33) == ord('m'):
+            case = cv2.waitKey(33)
+            if case == ord('m'):
                 if self.mode:
                     self.mode = False
                     print("Now in line mode.")
                 else:
                     self.mode = True
                     print("Now in rectangle mode.")
-            if cv2.waitKey(33) == ord('n'):
+            elif case == ord('n'):
                 if self.save:
                     self.save = False
                     print("No longer in saving mode.")
                 else:
                     self.save = True
                     print("Now in saving mode.")
-            if cv2.waitKey(33) == ord('s'):
+            elif case == ord('s'):
                 if self.mvsa_markup:
                     self.mvsa_markup = False
                     print("No longer in mvsa markup mode.")
                 else:
                     self.mvsa_markup = True
                     print("Now in mvsa markup mode.")
-            if cv2.waitKey(33) == ord('d'):
+            elif case == ord('d'):
                 if self.mvsa_diam_markup:
                     self.mvsa_diam_markup = False
                     print("No longer in mvsa diameter markup mode.")
                 else:
                     self.mvsa_diam_markup = True
                     print("Now in mvsa diameter markup mode.")
-            if cv2.waitKey(33) == ord('r'):
+            elif case == ord('r'):
                 if self.save:
                     cv2.imwrite(self.filename[:-4] + '_markup' + str(count) + '.jpg', img)
                     cv2.namedWindow('markup_' + str(count), cv2.WINDOW_AUTOSIZE)
@@ -113,12 +114,26 @@ class markup:
                 src = cv2.imread(self.filename)
                 img = cv2.resize(src, None, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
                 cv2.setMouseCallback('markup', self.mouse_callback, param=img)
+            elif case == ord('t'):
+                if self.save:
+                    cv2.imwrite(self.filename[:-4] + '_markup' + str(count) + '.jpg', img)
+                    cv2.namedWindow('markup_' + str(count), cv2.WINDOW_AUTOSIZE)
+                    cv2.imshow('markup_' + str(count), img)
+                    count = count + 1
+                src = cv2.imread(self.filename[:-9] + 'thresh' + self.filename[-5:])
+                if raw_input('Do you wish to switch markup? (y/n)') == 'y':
+                    img = cv2.resize(src, None, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+                    cv2.setMouseCallback('markup', self.mouse_callback, param=img)
+                else:
+                    cv2.namedWindow('thresh', cv2.WINDOW_AUTOSIZE)
+                    cv2.imshow('thresh', src)
             cv2.imshow('markup', img)
             cv2.waitKey(33)
 
         if self.save:
             cv2.imwrite(self.filename[:-4] + '_markup' + str(count) + '.jpg', img)
             self.save_markup()
+            print('MVSA is: ' + str(self.mvsa))
         cv2.destroyAllWindows()
 
     def file_IO(self):

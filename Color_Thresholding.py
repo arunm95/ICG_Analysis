@@ -40,7 +40,7 @@ class ImgCapture:
             th2 = cv2.adaptiveThreshold(f_grey, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
             cv2.imshow('TVideo_AM', th2)
 
-            if cv2.waitKey(30) == ord('i'):
+            if cv2.waitKey(33) == ord('i'):
                 if not os.path.exists(self.filename[:-4]):
                     os.mkdir(self.filename[:-4])
                 cv2.imwrite(self.filename[:-4] + '/capture_orig' + str(count) + '.jpg', frame)
